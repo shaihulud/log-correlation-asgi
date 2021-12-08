@@ -35,7 +35,7 @@ class LogCorrelationMiddleware:  # pylint: disable=R0902, R0903
         self,
         app,
         service_name: Optional[str] = None,
-        correlation_id_header: str = "",
+        correlation_id_header: str = "Correlation-Id",
         get_remote_addr: Union[str, Callable, None] = None,
         get_username: Optional[Callable] = None,
         logger_name: Optional[str] = None,
@@ -49,10 +49,10 @@ class LogCorrelationMiddleware:  # pylint: disable=R0902, R0903
         :param service_name: Name of service to show in logs.
         :param correlation_id_header: Name of header whose id will be the same between microservices.
         :param get_remote_addr: Callable to get remote address from headers dict or header name (str). TODO: multi dict
-        :param get_username: Callable to get remote address from headers dict or scope["user"].
+        :param get_username: Callable to get remote address from headers dict or scope["user"] (if filled previously).
         :param logger_name: Name of logger used to log http/ws requests.
         :param excluded_paths: Paths that won't be logged.
-        :param no_args_paths: Paths that will be logged without qs and body.
+        :param no_args_paths: Paths that will be logged without query string and body.
         :param get_request_message: A string to distinguish a request from a response in log.
         :param send_response_message: A string to distinguish a request from a response in log.
         """

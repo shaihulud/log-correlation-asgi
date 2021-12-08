@@ -1,9 +1,13 @@
 import logging.config
 
+import httpx
 from fastapi import FastAPI, WebSocket
 from fastapi.responses import JSONResponse, PlainTextResponse
 
-from log_correlation_asgi import LogCorrelationMiddleware
+from log_correlation_asgi import get_logging_dict, LogCorrelationMiddleware
+
+
+CORRELATION_ID_HEADER_NAME = "span_id"
 
 
 def _get_username(headers, user):
@@ -17,7 +21,7 @@ app = FastAPI()
 app.add_middleware(
     LogCorrelationMiddleware,
     service_name="MyService",
-    correlation_id_header="span_id",
+    correlation_id_header=CORRELATION_ID_HEADER_NAME,
     get_remote_addr="remoteaddr",
     get_username=_get_username,
     logger_name="middleware_logger",
@@ -31,7 +35,16 @@ async def get_json():
 
 @app.get("/plain/")
 async def get_plain():
+    headers = {CORRELATION_ID_HEADER_NAME: get_logging_dict()["correlation_id"]}
+
+    async with httpx.AsyncClient(base_url="http://127.0.0.1:8000", headers=headers) as client:
+        await client.get("/external/request/")
     return PlainTextResponse(content="yep text plain")
+
+
+@app.get("/external/request/")
+async def get_plain_internal():
+    return PlainTextResponse(content="more plain text to gods of plain text")
 
 
 @app.websocket("/ws/")
@@ -47,7 +60,7 @@ logging_config = {
     "formatters": {
         "default": {
             "()": "uvicorn.logging.DefaultFormatter",
-            "fmt": "%(asctime)s %(levelname)s %(service_name)s %(request_id)s %(correlation_id)s %(ip_address)s "
+            "fmt": "%(asctime)s %(levelname)s %(service_name)s %(correlation_id)s %(ip_address)s "
             "%(user)s %(method)s %(path)s %(message)s %(query_string)s %(body)s",
         },
     },
